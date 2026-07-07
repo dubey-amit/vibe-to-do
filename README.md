@@ -113,23 +113,6 @@ cp data/backups/tasks-<timestamp>.json data/tasks.json
 # then refresh the page
 ```
 
-## API
-
-| Method | Path | Body | Returns |
-|---|---|---|---|
-| GET | `/` | — | `index.html` |
-| GET | `/api/health` | — | `{ok:true, version, port}` |
-| GET | `/api/state` | — | `{tasks, settings, completions, revs}` |
-| PUT | `/api/tasks` | array | `{ok:true, savedAt, rev}` |
-| PUT | `/api/settings` | object | `{ok:true, savedAt, rev}` |
-| PUT | `/api/completions` | object | `{ok:true, savedAt, rev}` |
-
-CORS is open so the `file://` page can talk to the server.
-
-**Conflict detection** — each file has a server-side revision counter. Writes send the last rev the client saw (`x-base-rev` header, or `?baseRev=` for `sendBeacon` flushes). If another tab wrote first, the server answers **409** with the current value and rev, and the losing tab adopts the server state. Clients that send no rev are accepted as-is. Revisions reset on server restart; clients pick up fresh ones from `GET /api/state`.
-
-The client also re-syncs when a hidden tab becomes visible, flushes pending debounced writes on tab close via `sendBeacon`, and (in local mode) picks up changes other tabs make to localStorage.
-
 ## Contributing
 
 The whole app is one HTML file and one server file — read both in ten minutes. PRs welcome. Please keep the zero-dependency, single-file spirit.
