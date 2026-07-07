@@ -23,7 +23,7 @@ No accounts. No cloud. No build step. No dependencies except [Bun](https://bun.s
 **macOS / Linux**
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/vibe-to-do.git
+git clone https://github.com/dubey-amit/vibe-to-do.git
 cd vibe-to-do
 ./setup.sh
 ```
@@ -31,7 +31,7 @@ cd vibe-to-do
 **Windows (PowerShell)**
 
 ```powershell
-git clone https://github.com/YOUR_USERNAME/vibe-to-do.git
+git clone https://github.com/dubey-amit/vibe-to-do.git
 cd vibe-to-do
 powershell -ExecutionPolicy Bypass -File setup.ps1
 ```
