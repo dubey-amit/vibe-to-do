@@ -1,0 +1,16 @@
+# Personal task data — never commit
+data/
+
+# Logs
+*.log
+
+# Secrets
+.env
+.env.*
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Dependencies (the app has none, but just in case)
+node_modules/

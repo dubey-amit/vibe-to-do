@@ -1,0 +1,9 @@
+{
+  "name": "vibe-to-do",
+  "version": "1.0.0",
+  "description": "A fast, single-file weekly task board. No accounts, no cloud, no build step — your tasks stay on your machine.",
+  "license": "MIT",
+  "scripts": {
+    "start": "bun server.ts"
+  }
+}

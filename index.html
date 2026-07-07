@@ -1,0 +1,1787 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Vibe-To-Do</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23000'/><rect x='10' y='14' width='44' height='6' rx='2' fill='%23ffffff'/><rect x='10' y='29' width='44' height='6' rx='2' fill='%237a7a7a'/><rect x='10' y='44' width='28' height='6' rx='2' fill='%237a7a7a'/><path d='M44 47l3 3 7-7' stroke='%2386efac' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
+<style>
+  :root, [data-theme="dark"]{
+    --bg:#0a0d12; --panel:#11161f; --panel-2:#161c28;
+    --line:#222a38; --line-2:#2e3850;
+    --text:#ffffff; --muted:#a3adc2; --muted-2:#6a7388;
+    --accent:#60a5fa;
+    --good:#34d399; --bad:#f87171; --warn:#fbbf24;
+    --pri-hi:#f87171; --pri-md:#fbbf24; --pri-lo:#a3adc2;
+  }
+  [data-theme="dark"] .check:checked{background:var(--accent); border-color:var(--accent)}
+  [data-theme="dark"] .btn.primary{background:var(--accent); color:#0a0d12; border-color:var(--accent)}
+  [data-theme="dark"] h1{
+    background:linear-gradient(90deg,#fff,#60a5fa);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+
+  [data-theme="light"]{
+    --bg:#e7ebf3; --panel:#f5f7fb; --panel-2:#eaeef6;
+    --line:#d2d9e6; --line-2:#b4c0d4;
+    --text:#0f172a; --muted:#525b70; --muted-2:#7e8798;
+    --accent:#2563eb;
+    --pri-hi:#dc2626; --pri-md:#d97706; --pri-lo:#525b70;
+  }
+  [data-theme="light"] body{
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #d8e2f2 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, #dfe6f1 0%, transparent 55%),
+      var(--bg);
+  }
+  [data-theme="light"] .check:checked{background:var(--accent); border-color:var(--accent)}
+  [data-theme="light"] .check:checked::after{border-color:#fff}
+  [data-theme="light"] .check{border-color:#9aa5ba}
+  [data-theme="light"] .btn.primary{background:var(--accent); color:#fff; border-color:var(--accent)}
+  [data-theme="light"] .btn:hover{border-color:var(--line-2)}
+  [data-theme="light"] .task{box-shadow:0 1px 2px rgba(15,23,42,.05)}
+  [data-theme="light"] .task:hover{border-color:var(--line-2)}
+  [data-theme="light"] h1{
+    background:linear-gradient(90deg,#0f172a,#2563eb);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+
+  [data-theme="neon"]{
+    --bg:#000814; --panel:#04101f; --panel-2:#061b30;
+    --line:#0a2a48; --line-2:#0f3c64;
+    --text:#e0f2ff; --muted:#7fb8e8; --muted-2:#4a7da8;
+    --accent:#00d4ff;
+    --good:#00ffe0; --bad:#ff3d7f; --warn:#ffea00;
+    --pri-hi:#ff3d7f; --pri-md:#00d4ff; --pri-lo:#7fb8e8;
+  }
+  [data-theme="neon"] body{
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #00305a 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, #001a3a 0%, transparent 55%),
+      var(--bg);
+  }
+  [data-theme="neon"] h1{
+    background:linear-gradient(90deg,#00d4ff,#0099ff);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow: 0 0 20px rgba(0,212,255,.3);
+  }
+  [data-theme="neon"] .btn.primary{
+    background:linear-gradient(135deg,#00d4ff,#0099ff);
+    border:none; color:#000814; text-shadow:none;
+    box-shadow: 0 0 16px rgba(0,212,255,.4);
+  }
+  [data-theme="neon"] .pill{box-shadow: 0 0 12px rgba(0,212,255,.05)}
+  [data-theme="neon"] .task[data-pri="2"]{box-shadow: -2px 0 12px rgba(255,61,127,.25)}
+  [data-theme="neon"] .check:checked{background:#00d4ff; border-color:#00d4ff; box-shadow:0 0 10px #00d4ff}
+  [data-theme="neon"] .check:checked::after{border-color:#000814}
+  [data-theme="neon"] a.link-chip:hover{color:#00d4ff; text-shadow:0 0 8px rgba(0,212,255,.5)}
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font:14px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+    color:var(--text); background:var(--bg);
+    -webkit-font-smoothing:antialiased; letter-spacing:-0.01em;
+  }
+  ::selection{background:var(--text); color:var(--bg)}
+
+  header{
+    display:flex; align-items:center; gap:8px;
+    padding:14px 24px;
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:10;
+    background:color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter:blur(10px);
+  }
+  header h1{margin:0; font-size:16px; font-weight:600}
+  header .sub{color:var(--muted); font-size:12px; margin-left:6px}
+  header .spacer{flex:1}
+
+  .btn{
+    background:transparent; color:var(--text);
+    border:1px solid var(--line-2);
+    padding:7px 12px; border-radius:8px; font-size:13px;
+    font-weight:500; cursor:pointer; transition: all .15s ease;
+    font-family:inherit; white-space:nowrap;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn:hover{border-color:#444; background:var(--panel)}
+  .btn:active{transform:scale(.97)}
+  .btn svg{
+    width:16px; height:16px; flex:none; display:block;
+    fill:none; stroke:currentColor; stroke-width:2;
+    stroke-linecap:round; stroke-linejoin:round;
+  }
+  .btn.primary{background:var(--text); color:var(--bg); border-color:var(--text); font-weight:600}
+  .btn.primary:hover{filter:brightness(.92)}
+  .btn.ghost{border-color:transparent; color:var(--muted); padding:8px; min-width:32px; justify-content:center}
+  .btn.ghost:hover{color:var(--text); background:var(--panel)}
+  .btn.danger{color:var(--bad); border-color:#3a1414}
+  .btn.danger:hover{background:#1a0a0a}
+  .btn.drop-target{background:var(--text); color:var(--bg); border-color:var(--text)}
+
+  .add-row{
+    display:grid;
+    grid-template-columns: 1fr 220px 160px 140px 120px auto;
+    gap:8px; padding:12px 24px;
+    border-bottom:1px solid var(--line);
+    background:color-mix(in srgb, var(--panel) 70%, transparent);
+  }
+  .add-row input, .add-row select{
+    background:var(--panel); color:var(--text);
+    border:1px solid var(--line-2); border-radius:8px;
+    padding:8px 11px; font-size:13px; outline:none;
+    transition: border-color .15s; font-family:inherit;
+  }
+  .add-row input::placeholder{color:var(--muted-2)}
+  .add-row input:focus, .add-row select:focus{border-color:#666}
+
+  main{
+    display:grid;
+    grid-template-columns: repeat(var(--cols,5), minmax(0,1fr));
+    gap:1px; background:var(--line);
+    border-bottom:1px solid var(--line);
+    min-height: calc(100vh - 180px);
+  }
+  @media (max-width: 900px){
+    main{grid-template-columns: repeat(2, minmax(0,1fr))}
+  }
+  @media (max-width: 600px){
+    main{grid-template-columns: 1fr}
+  }
+  /* backlog drawer */
+  .backlog-drawer{
+    position:fixed; top:0; right:0; bottom:0;
+    width:min(340px, 90vw);
+    background:var(--panel); border-left:1px solid var(--line-2);
+    transform:translateX(100%); transition: transform .25s ease;
+    z-index:40; display:flex; flex-direction:column;
+    box-shadow: -20px 0 60px rgba(0,0,0,.4);
+  }
+  .backlog-drawer.open{transform:translateX(0)}
+  .backlog-drawer .col-head{padding:14px 16px 10px; margin:0; border-bottom:1px solid var(--line)}
+  .backlog-drawer .drop{flex:1; overflow:auto; padding:12px 14px}
+  .backlog-drawer .close-x{
+    background:transparent; border:none; color:var(--muted); cursor:pointer;
+    font-size:18px; padding:2px 8px; border-radius:6px;
+  }
+  .backlog-drawer .close-x:hover{color:var(--text); background:var(--panel-2)}
+  .backlog-badge{
+    background:var(--text); color:var(--bg);
+    font-size:10px; font-weight:700;
+    padding:1px 6px; border-radius:999px;
+    margin-left:4px; font-variant-numeric:tabular-nums;
+  }
+
+  .col{
+    background:var(--bg);
+    padding:14px 12px 18px;
+    display:flex; flex-direction:column;
+    min-height: 240px;
+    transition: background .15s;
+    position:relative;
+  }
+  .col.today{background:var(--panel)}
+  .col.backlog{background:color-mix(in srgb, var(--panel) 60%, var(--bg))}
+  .col-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:12px; padding-bottom:8px;
+    border-bottom:1px solid var(--line);
+    gap:6px;
+  }
+  .col-head .day{font-weight:600; font-size:13px}
+  .col-head .day.is-today{color:var(--text)}
+  .col-head .day.not-today{color:var(--muted)}
+  .col-head .date{color:var(--muted); font-size:11px; margin-top:2px}
+  .col-head .count{
+    color:var(--muted-2); font-size:11px; font-variant-numeric:tabular-nums;
+  }
+  .col-head .col-action{
+    background:transparent; color:var(--muted-2); border:1px solid transparent;
+    border-radius:6px; cursor:pointer; padding:2px 6px; font-size:13px;
+    transition: all .15s;
+  }
+  .col-head .col-action:hover{color:var(--text); background:var(--panel-2); border-color:var(--line)}
+
+  .drop{
+    flex:1; display:flex; flex-direction:column; gap:6px;
+    min-height:60px; border-radius:6px;
+    transition: background .15s, outline .15s;
+    margin:-4px; padding:4px;
+  }
+  .drop.over{background:var(--panel); outline:1px dashed var(--line-2)}
+
+  .task{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-left:3px solid var(--line-2);
+    border-radius:8px;
+    padding:9px 11px;
+    cursor:grab; user-select:none;
+    transition: border-color .15s, background .15s, opacity .15s, transform .08s;
+    display:flex; gap:9px; align-items:flex-start;
+    position:relative;
+  }
+  .task[data-pri="2"]{border-left-color:var(--pri-hi)}
+  .task[data-pri="1"]{border-left-color:var(--pri-md)}
+  .task:hover{border-color:#333; background:var(--panel-2)}
+  .task:hover .row-actions{opacity:1}
+  .task.dragging{opacity:.35; cursor:grabbing}
+  .task.drop-before{box-shadow: 0 -2px 0 0 var(--text)}
+  .task.drop-after{box-shadow: 0 2px 0 0 var(--text)}
+  .task.done{background:color-mix(in srgb, var(--panel) 60%, var(--bg)); border-left-color:var(--line-2)}
+  .task.done .title{text-decoration:line-through; text-decoration-color:var(--muted-2); color:var(--muted)}
+
+  .check{
+    appearance:none; -webkit-appearance:none;
+    width:16px; height:16px; min-width:16px;
+    border:1.5px solid #555; border-radius:4px;
+    background:transparent; cursor:pointer;
+    margin-top:2px;
+    display:inline-flex; align-items:center; justify-content:center;
+    transition: all .15s; position:relative;
+  }
+  .check:hover{border-color:var(--text)}
+  .check:checked{background:var(--text); border-color:var(--text)}
+  .check:checked::after{
+    content:''; position:absolute; left:4px; top:1px;
+    width:5px; height:9px;
+    border:solid var(--bg); border-width:0 2px 2px 0;
+    transform:rotate(45deg);
+  }
+
+  .task-body{flex:1; min-width:0}
+  .task .title{font-size:13px; line-height:1.4; word-break:break-word; cursor:text}
+  .task .meta{
+    display:flex; flex-direction:column; gap:5px; align-items:flex-start;
+    margin-top:6px; font-size:11px;
+  }
+  .chips{display:flex; gap:5px; flex-wrap:wrap; align-items:center}
+  .chip{
+    padding:1px 7px; border-radius:4px;
+    background:#141414; color:var(--muted);
+    border:1px solid var(--line);
+    font-variant-numeric:tabular-nums; font-size:11px;
+  }
+  [data-theme="light"] .chip{background:#e7ebf3; border-color:var(--line-2)}
+  button.chip{font:inherit; cursor:pointer; transition: color .15s, border-color .15s, background .15s}
+  button.chip:hover{color:var(--text); border-color:var(--line-2); background:var(--panel-2)}
+  .notes-view{
+    white-space:pre-wrap; word-break:break-word;
+    background:var(--bg); border:1px solid var(--line);
+    border-radius:8px; padding:14px 16px;
+    font-size:13px; line-height:1.55; color:var(--text);
+    max-height:55vh; overflow:auto;
+  }
+  .notes-view a{color:var(--accent); text-decoration:underline}
+  .due{padding:2px 7px; border-radius:4px; background:#141414; color:var(--muted); border:1px solid var(--line); font-size:11px}
+  [data-theme="light"] .due{background:#e7ebf3; border-color:var(--line-2)}
+  .due.overdue{background:#1a0a0a; color:#fca5a5; border-color:#3a1414}
+  [data-theme="light"] .due.overdue{background:#fee2e2; color:#991b1b; border-color:#fca5a5}
+
+  .link-chip{
+    color:var(--muted); text-decoration:none; max-width:100%;
+    display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    padding:2px 7px; background:#141414; border:1px solid var(--line);
+    border-radius:4px; font-size:11px;
+    transition: all .15s;
+  }
+  [data-theme="light"] .link-chip{background:#e7ebf3; border-color:var(--line-2)}
+  .link-chip:hover{color:var(--text); border-color:#333}
+
+  .row-actions{
+    position:absolute; top:6px; right:6px;
+    display:flex; gap:2px; align-items:center;
+    opacity:0; transition: opacity .15s;
+    background:color-mix(in srgb, var(--panel-2) 95%, transparent);
+    border-radius:6px; padding:2px;
+    backdrop-filter: blur(4px);
+  }
+  .icon-btn{
+    background:transparent; color:var(--muted); border:none;
+    padding:3px 6px; border-radius:4px; cursor:pointer; font-size:12px;
+    line-height:1; transition: color .15s, background .15s; position:relative;
+  }
+  .icon-btn:hover{color:var(--text); background:var(--panel-2)}
+  .icon-btn.del:hover{color:var(--bad); background:#1a0a0a}
+  .icon-btn input[type=date]{position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%}
+
+  .empty{
+    color:var(--muted-2); font-size:11px;
+    padding:14px 4px; text-align:center;
+    border:1px dashed var(--line); border-radius:6px;
+  }
+  .quick-add{
+    margin-top:6px;
+    background:transparent; color:var(--muted-2);
+    border:1px dashed var(--line); border-radius:6px;
+    padding:6px; font-size:11px; cursor:pointer;
+    transition: all .15s;
+  }
+  .quick-add:hover{color:var(--text); border-color:var(--line-2); background:var(--panel)}
+  .quick-add input{
+    width:100%; background:transparent; color:var(--text);
+    border:none; outline:none; font-size:12px; font-family:inherit;
+  }
+
+  footer{
+    padding:12px 24px 18px;
+    color:var(--muted); font-size:11px;
+    display:flex; gap:10px; align-items:center;
+    border-top:1px solid var(--line);
+    flex-wrap:wrap;
+  }
+  .pill{
+    background:var(--panel); border:1px solid var(--line);
+    padding:3px 10px; border-radius:999px;
+    font-variant-numeric:tabular-nums;
+    display:inline-flex; gap:6px; align-items:baseline;
+  }
+  .pill-k{color:var(--muted-2); font-size:11px}
+  .pill-v{color:var(--text); font-weight:600; font-size:11px}
+  .overdue-pill{border-color:#3a1414; background:#1a0a0a}
+  [data-theme="light"] .overdue-pill{border-color:#fca5a5; background:#fee2e2}
+  .overdue-pill .pill-k{color:#fca5a5}
+  .overdue-pill .pill-v{color:#fecaca}
+  [data-theme="light"] .overdue-pill .pill-k{color:#991b1b}
+  [data-theme="light"] .overdue-pill .pill-v{color:#7f1d1d}
+  .overdue-pill.zero{border-color:var(--line); background:var(--panel)}
+  .overdue-pill.zero .pill-k{color:var(--muted-2)}
+  .overdue-pill.zero .pill-v{color:var(--text)}
+  .pill.streak{border-color:#3a2c0e; background:#1a1408}
+  [data-theme="light"] .pill.streak{border-color:#fcd34d; background:#fef9c3}
+  .pill.streak .pill-k{color:#fcd34d}
+  .pill.streak .pill-v{color:#fde68a}
+  [data-theme="light"] .pill.streak .pill-k{color:#92400e}
+  [data-theme="light"] .pill.streak .pill-v{color:#78350f}
+  .hint{color:var(--muted-2); margin-left:auto; font-size:11px}
+
+  /* modals */
+  .overlay{
+    position:fixed; inset:0; z-index:50;
+    background:rgba(0,0,0,.7); backdrop-filter: blur(4px);
+    display:none; align-items:flex-start; justify-content:center;
+    padding-top:60px;
+  }
+  .overlay.open{display:flex}
+  .modal{
+    background:var(--panel); border:1px solid var(--line-2);
+    border-radius:12px; width:min(640px, 92vw);
+    padding:20px; max-height:80vh; overflow:auto;
+    box-shadow: 0 30px 80px rgba(0,0,0,.5);
+  }
+  .modal h2{margin:0 0 16px; font-size:15px; font-weight:600}
+  .modal h3{margin:18px 0 8px; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em}
+  .field{display:flex; flex-direction:column; gap:5px; margin-bottom:10px}
+  .field label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em}
+  .field input, .field select, .field textarea{
+    background:var(--bg); color:var(--text);
+    border:1px solid var(--line-2); border-radius:8px;
+    padding:9px 11px; font-size:13px; outline:none;
+    font-family:inherit; transition: border-color .15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:#666}
+  .field textarea{resize:vertical; min-height:60px}
+  .field-row{display:grid; grid-template-columns: 1fr 1fr; gap:10px}
+  .field-row-3{display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px}
+  .modal-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:18px}
+
+  .pri-picker{display:flex; gap:6px}
+  .pri-picker button{
+    flex:1; background:var(--bg); color:var(--muted);
+    border:1px solid var(--line-2); border-radius:8px;
+    padding:8px; font-size:12px; cursor:pointer;
+    transition: all .15s;
+  }
+  .pri-picker button.active[data-p="0"]{border-color:var(--muted)}
+  .pri-picker button.active[data-p="1"]{border-color:var(--pri-md); color:var(--pri-md); background:#1a1408}
+  .pri-picker button.active[data-p="2"]{border-color:var(--pri-hi); color:var(--pri-hi); background:#1a0a0a}
+
+  /* search */
+  .search-input{width:100%; padding:11px 14px; font-size:14px}
+  .search-results{margin-top:14px; max-height:50vh; overflow:auto; display:flex; flex-direction:column; gap:6px}
+  .search-item{
+    padding:9px 12px; background:var(--bg); border:1px solid var(--line);
+    border-radius:8px; cursor:pointer; display:flex; gap:10px; align-items:center;
+  }
+  .search-item:hover{border-color:var(--line-2); background:var(--panel-2)}
+  .search-item .when{color:var(--muted); font-size:11px; white-space:nowrap}
+  .kbd{
+    background:var(--bg); border:1px solid var(--line-2);
+    border-radius:4px; padding:1px 5px; font-size:10px;
+    font-family: ui-monospace, monospace; color:var(--muted);
+  }
+
+  /* toast */
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--text); color:var(--bg);
+    padding:10px 16px; border-radius:8px; font-size:13px; font-weight:500;
+    display:flex; gap:14px; align-items:center; z-index:100;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    animation: rise .2s ease;
+  }
+  @keyframes rise{from{opacity:0; transform:translate(-50%,10px)} to{opacity:1; transform:translate(-50%,0)}}
+  .toast button{
+    background:transparent; color:var(--bg); border:1px solid var(--bg);
+    padding:3px 9px; border-radius:5px; cursor:pointer; font-size:11px; font-weight:600;
+  }
+  .toast button:hover{background:var(--bg); color:var(--text)}
+
+  /* roll-over banner */
+  .rollover{
+    margin-top:6px; padding:8px 10px;
+    background:#1a1408; border:1px solid #3a2c0e;
+    border-radius:6px; font-size:11px;
+    display:flex; gap:8px; align-items:center; justify-content:space-between;
+    color:#fde68a;
+  }
+  [data-theme="light"] .rollover{background:#fef9c3; border-color:#fcd34d; color:#78350f}
+
+  /* scrollbar */
+  ::-webkit-scrollbar{width:8px; height:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--line-2); border-radius:8px}
+  ::-webkit-scrollbar-thumb:hover{background:#333}
+
+  /* celebration */
+  .celebrate{
+    position:fixed; inset:0; z-index:200;
+    pointer-events:none;
+    display:none;
+  }
+  .celebrate.on{display:block}
+  .celebrate canvas{position:absolute; inset:0; width:100%; height:100%}
+  .celebrate-banner{
+    position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%) scale(.6);
+    background:linear-gradient(135deg, #ff00e5, #00ffa3);
+    color:#000; font-size:32px; font-weight:800;
+    padding:22px 40px; border-radius:18px;
+    letter-spacing:-0.02em;
+    box-shadow: 0 20px 60px rgba(0,0,0,.4), 0 0 60px rgba(255,0,229,.3);
+    opacity:0;
+    animation: pop 2.6s cubic-bezier(.2,.9,.3,1) forwards;
+    text-align:center; line-height:1.15;
+  }
+  .celebrate-banner small{
+    display:block; font-size:14px; font-weight:600;
+    opacity:.8; margin-top:6px; letter-spacing:0;
+  }
+  @keyframes pop{
+    0%{opacity:0; transform:translate(-50%,-50%) scale(.4) rotate(-6deg)}
+    15%{opacity:1; transform:translate(-50%,-50%) scale(1.15) rotate(2deg)}
+    25%{transform:translate(-50%,-50%) scale(1) rotate(0deg)}
+    80%{opacity:1; transform:translate(-50%,-50%) scale(1) rotate(0deg)}
+    100%{opacity:0; transform:translate(-50%,-50%) scale(.9) rotate(0deg)}
+  }
+
+  /* mobile gestures */
+  .task.swipe-complete{background:#0a2010; border-left-color:var(--good)}
+  .task.swipe-delete{background:#1a0a0a; border-left-color:var(--bad)}
+
+  /* print */
+  @media print{
+    body{background:#fff; color:#000}
+    header, .add-row, footer, .row-actions, .quick-add, .col-action, .overlay{display:none !important}
+    main{grid-template-columns: repeat(var(--cols,5), 1fr); background:#fff; border:none}
+    .col{background:#fff; padding:8px}
+    .task{background:#fff; border:1px solid #ccc; box-shadow:none}
+    .task.done .title{color:#666}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Vibe-To-Do</h1>
+  <span class="sub" id="storageBadge" style="font-size:10px; font-variant:tabular-nums; letter-spacing:0.02em" title="">● local</span>
+  <span class="sub" id="weekLabel"></span>
+  <div class="spacer"></div>
+  <button class="btn ghost" id="prevWeek" title="Previous week (←)">
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <button class="btn" id="todayBtn" title="Today (T)">Today</button>
+  <button class="btn ghost" id="nextWeek" title="Next week (→)">
+    <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+  <button class="btn ghost" id="searchBtn" title="Search (/ or Ctrl+K)">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  </button>
+  <button class="btn ghost" id="rollBtn" title="Roll over yesterday's incomplete">
+    <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+  </button>
+  <button class="btn ghost" id="backlogBtn" title="Backlog">
+    <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    <span>Backlog</span><span class="backlog-badge" id="backlogCount" style="display:none">0</span>
+  </button>
+  <button class="btn ghost" id="settingsBtn" title="Settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
+  <button class="btn ghost" id="exportBtn" title="Export / Import">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+  </button>
+</header>
+
+<form class="add-row" id="addForm">
+  <input id="t_title" placeholder="New task… (!! med, !!! high priority)" required autocomplete="off" />
+  <input id="t_link" placeholder="Link (optional)" autocomplete="off" />
+  <input id="t_due" type="date" title="Deadline" />
+  <select id="t_day"></select>
+  <select id="t_pri">
+    <option value="0">Normal</option>
+    <option value="1">Med ●</option>
+    <option value="2">High ●</option>
+  </select>
+  <button class="btn primary" type="submit">Add</button>
+</form>
+
+<main id="board"></main>
+
+<aside class="backlog-drawer" id="backlogDrawer">
+  <div class="col-head">
+    <div>
+      <div class="day">Backlog</div>
+      <div class="date">unscheduled tasks</div>
+    </div>
+    <button class="close-x" id="closeBacklog">×</button>
+  </div>
+  <div class="drop" data-date="" id="backlogDrop"></div>
+</aside>
+
+<footer>
+  <span class="pill streak"><span class="pill-k">Streak</span> <span class="pill-v" id="s_streak">0</span></span>
+  <span class="pill"><span class="pill-k">Done this week</span> <span class="pill-v" id="s_doneWeek">0</span></span>
+  <span class="pill"><span class="pill-k">Pending this week</span> <span class="pill-v" id="s_pendWeek">0</span></span>
+  <span class="pill"><span class="pill-k">Completion</span> <span class="pill-v" id="s_completion">0%</span></span>
+  <span class="pill"><span class="pill-k">Total pending</span> <span class="pill-v" id="s_pendAll">0</span></span>
+  <span class="pill overdue-pill"><span class="pill-k">Deadlines crossed</span> <span class="pill-v" id="s_overdue">0</span></span>
+  <span class="pill"><span class="pill-k">Total</span> <span class="pill-v" id="s_total">0</span></span>
+  <span class="hint">N add · / search · T today · ← → weeks · Esc close · dbl-click to edit</span>
+</footer>
+
+<!-- modals -->
+<div class="overlay" id="editOverlay"><div class="modal" id="editModal"></div></div>
+<div class="overlay" id="settingsOverlay"><div class="modal" id="settingsModal"></div></div>
+<div class="overlay" id="searchOverlay"><div class="modal" id="searchModal"></div></div>
+<div class="overlay" id="exportOverlay"><div class="modal" id="exportModal"></div></div>
+<div class="overlay" id="notesOverlay"><div class="modal" id="notesModal"></div></div>
+
+<div id="toastHost"></div>
+
+<div class="celebrate" id="celebrate">
+  <canvas id="confetti"></canvas>
+  <div class="celebrate-banner">
+    All done!
+    <small id="celebrateSub">Day cleared 🎉</small>
+  </div>
+</div>
+
+<script>
+/* ========== Storage & State ========== */
+const STORAGE_KEY = 'vibe-to-do-tasks-v1';
+const SETTINGS_KEY = 'vibe-to-do-settings-v1';
+const COMPLETIONS_KEY = 'vibe-to-do-completions-v1'; // {date: count} for streak
+const BACKUP_PREFIX = 'vibe-to-do-backup-';
+
+// One-time key migration from the app's previous name ("Daily Tasks")
+try{
+  [['daily-tasks-v2', STORAGE_KEY],
+   ['daily-tasks-settings-v1', SETTINGS_KEY],
+   ['daily-tasks-completions-v1', COMPLETIONS_KEY]].forEach(([oldKey, newKey])=>{
+    const v = localStorage.getItem(oldKey);
+    if(v !== null && localStorage.getItem(newKey) === null) localStorage.setItem(newKey, v);
+  });
+}catch{}
+
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+const THEMES = ['dark','light','neon'];
+
+const defaultSettings = {
+  theme: 'dark',             // 'dark' | 'light' | 'neon'
+  archiveAfterDays: 30,
+  showArchived: false,
+  showWeekend: false,        // show Sat/Sun columns on the board
+};
+
+const state = {
+  tasks: load(STORAGE_KEY, []),
+  settings: { ...defaultSettings, ...load(SETTINGS_KEY, {}) },
+  completions: load(COMPLETIONS_KEY, {}),
+  weekOffset: 0,
+  undo: null,           // { task, timer }
+};
+
+function sanitizeSettings(){
+  if(!THEMES.includes(state.settings.theme)) state.settings.theme = 'dark';
+}
+sanitizeSettings();
+
+function load(key, def){ try{ return JSON.parse(localStorage.getItem(key)) ?? def; }catch{ return def; } }
+function saveKey(key, val){
+  try{ localStorage.setItem(key, JSON.stringify(val)); }
+  catch(e){
+    toast(`Storage error: ${e.message}. Export your data!`, null, 6000);
+  }
+}
+
+/* ========== Server-backed persistence (Tier 2) ==========
+ * On bootstrap we probe /api/health. If the server is up we sync state from
+ * /api/state and PUT changes back (debounced). localStorage stays as a mirror
+ * so the page still works if the server stops.
+ */
+const storage = {
+  mode: 'local',          // 'local' | 'server'
+  base: '',               // origin to talk to ('' = same-origin relative)
+  lastSync: 0,
+  timers: {},             // per-key debounce
+  pending: new Set(),     // keys with a debounced write not yet sent
+  revs: {},               // per-key server revision, for conflict detection
+  errorShown: false,
+};
+
+function setStorageBadge(){
+  const el = document.getElementById('storageBadge');
+  if(!el) return;
+  if(storage.mode === 'server'){
+    el.textContent = '● server';
+    el.style.color = 'var(--good)';
+    el.title = `Persisting to ${storage.base}/api/* — tasks.json on disk`;
+  } else {
+    el.textContent = '● local';
+    el.style.color = 'var(--muted)';
+    el.title = 'Using browser localStorage (no server detected)';
+  }
+}
+
+function pushToServer(name, value){
+  // Debounce so a burst of edits coalesces into one write
+  clearTimeout(storage.timers[name]);
+  storage.pending.add(name);
+  storage.timers[name] = setTimeout(()=> sendToServer(name, value), 300);
+}
+
+async function sendToServer(name, value){
+  storage.pending.delete(name);
+  try{
+    const r = await fetch(`${storage.base}/api/${name}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type':'application/json',
+        'x-base-rev': String(storage.revs[name] ?? 0),
+      },
+      body: JSON.stringify(value),
+    });
+    if(r.status === 409){
+      // Another tab/window wrote first — adopt its state instead of clobbering it.
+      const j = await r.json();
+      adoptServerValue(name, j.value, j.rev);
+      toast('Another tab saved changes — reloaded the latest.', null, 4500);
+      return;
+    }
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if(typeof j.rev === 'number') storage.revs[name] = j.rev;
+    storage.lastSync = Date.now();
+    storage.errorShown = false;
+    setStorageBadge();
+  }catch(e){
+    if(!storage.errorShown){
+      toast(`Server sync failed — staying local. (${e.message})`, null, 5000);
+      storage.errorShown = true;
+    }
+  }
+}
+
+function adoptServerValue(name, value, rev){
+  if(typeof rev === 'number') storage.revs[name] = rev;
+  if(name === 'tasks' && Array.isArray(value)){
+    state.tasks = value;
+    saveKey(STORAGE_KEY, value);
+  } else if(name === 'settings' && value && typeof value === 'object' && !Array.isArray(value)){
+    state.settings = { ...defaultSettings, ...value };
+    sanitizeSettings();
+    saveKey(SETTINGS_KEY, state.settings);
+  } else if(name === 'completions' && value && typeof value === 'object'){
+    state.completions = value;
+    saveKey(COMPLETIONS_KEY, value);
+  }
+  render();
+}
+
+function save(){
+  saveKey(STORAGE_KEY, state.tasks);
+  if(storage.mode === 'server') pushToServer('tasks', state.tasks);
+}
+function saveSettings(){
+  saveKey(SETTINGS_KEY, state.settings);
+  if(storage.mode === 'server') pushToServer('settings', state.settings);
+}
+function saveCompletions(){
+  saveKey(COMPLETIONS_KEY, state.completions);
+  if(storage.mode === 'server') pushToServer('completions', state.completions);
+}
+
+function checkQuota(){
+  try{
+    const used = new Blob(Object.values(localStorage)).size;
+    const pct = used / (5*1024*1024);
+    if(pct > 0.8) toast(`localStorage ${Math.round(pct*100)}% full — export & archive soon.`, null, 5000);
+  }catch{}
+}
+
+function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+
+/* ========== Dates ========== */
+function startOfWeek(d){
+  // Monday as week start, always
+  const x = new Date(d); x.setHours(0,0,0,0);
+  const day = x.getDay();
+  const offset = (day === 0) ? -6 : (1 - day);
+  x.setDate(x.getDate() + offset);
+  return x;
+}
+function addDays(d, n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function ymd(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+function pretty(d){ return d.toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
+
+function weekDates(){
+  const base = startOfWeek(addDays(new Date(), state.weekOffset*7));
+  const len = state.settings.showWeekend ? 7 : 5;
+  return Array.from({length:len}, (_,i)=> addDays(base,i));
+}
+
+function isArchived(t){
+  if(!t.done || !t.completedAt) return false;
+  const days = (Date.now() - t.completedAt) / 86400000;
+  return days > state.settings.archiveAfterDays;
+}
+
+/* ========== Add task ========== */
+function parseQuickAdd(raw){
+  let title = raw;
+  let priority = 0;
+  if(/(?:^|\s)!!!/.test(title)){ priority = 2; title = title.replace(/(?:^|\s)!!!/, ' '); }
+  else if(/(?:^|\s)!!/.test(title)){ priority = 1; title = title.replace(/(?:^|\s)!!/, ' '); }
+  return { title: title.trim().replace(/\s+/g,' '), priority };
+}
+
+/* ========== Render board ========== */
+function render(){
+  document.documentElement.setAttribute('data-theme', state.settings.theme);
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  const dates = weekDates();
+  const todayKey = ymd(new Date());
+  document.documentElement.style.setProperty('--cols', dates.length);
+
+  const first = dates[0], last = dates[dates.length-1];
+  document.getElementById('weekLabel').textContent =
+    `${first.toLocaleDateString(undefined,{month:'short',day:'numeric'})} – ${last.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}`;
+
+  // populate add-row day selector (rebuilt whenever the visible dates change)
+  const sel = document.getElementById('t_day');
+  const keys = dates.map(ymd);
+  const want = JSON.stringify(keys);
+  if(sel.dataset.built !== want){
+    const prev = sel.value;
+    sel.innerHTML = '<option value="-1">Backlog</option>';
+    dates.forEach(d=>{
+      const o=document.createElement('option');
+      o.value = ymd(d);
+      o.textContent = DAYS[d.getDay()].slice(0,3) + ' ' + pretty(d);
+      sel.appendChild(o);
+    });
+    sel.value = (prev === '-1' || keys.includes(prev)) ? prev
+      : keys.includes(todayKey) ? todayKey : keys[0];
+    sel.dataset.built = want;
+  }
+
+  // Backlog rendered into drawer
+  const backlogTasks = visible(state.tasks).filter(t => !t.date);
+  const drop = document.getElementById('backlogDrop');
+  drop.innerHTML = '';
+  renderColumnTasks(drop, backlogTasks, '');
+  const badge = document.getElementById('backlogCount');
+  badge.textContent = backlogTasks.length;
+  badge.style.display = backlogTasks.length ? 'inline-block' : 'none';
+
+  // Day columns
+  dates.forEach(date=>{
+    const key = ymd(date);
+    const isToday = key===todayKey;
+    const col = document.createElement('section');
+    col.className = 'col' + (isToday ? ' today' : '');
+    const here = visible(state.tasks).filter(t=>t.date===key);
+    col.innerHTML = `
+      <div class="col-head">
+        <div>
+          <div class="day ${isToday?'is-today':'not-today'}">${DAYS[date.getDay()]}</div>
+          <div class="date">${pretty(date)}${isToday?' · Today':''}</div>
+        </div>
+        <span class="count">${here.length||''}</span>
+      </div>
+      <div class="drop" data-date="${key}"></div>
+    `;
+    renderColumnTasks(col.querySelector('.drop'), here, key);
+    board.appendChild(col);
+
+    // Roll-over banner on today's column
+    if(isToday){
+      const yKey = ymd(addDays(new Date(),-1));
+      const yIncomp = state.tasks.filter(t => t.date===yKey && !t.done);
+      if(yIncomp.length){
+        const banner = document.createElement('div');
+        banner.className = 'rollover';
+        banner.innerHTML = `${yIncomp.length} from yesterday <button class="btn" id="doRoll">Roll over</button>`;
+        col.appendChild(banner);
+        banner.querySelector('#doRoll').onclick = ()=>{
+          yIncomp.forEach(t => t.date = todayKey);
+          save(); render();
+          toast(`Rolled over ${yIncomp.length} task${yIncomp.length>1?'s':''}.`);
+        };
+      }
+    }
+  });
+
+  renderStats();
+}
+
+function visible(tasks){
+  return tasks.filter(t => state.settings.showArchived || !isArchived(t));
+}
+
+function renderColumnTasks(drop, tasks, dateKey){
+  const sorted = tasks.slice().sort((a,b)=>
+    Number(a.done)-Number(b.done) ||
+    (b.priority||0)-(a.priority||0) ||
+    (a.order||a.created)-(b.order||b.created)
+  );
+  if(sorted.length===0){
+    const e=document.createElement('div'); e.className='empty';
+    e.textContent = dateKey==='' ? 'drag tasks here to defer' : emptyHint();
+    drop.appendChild(e);
+  }
+  sorted.forEach(t=> drop.appendChild(renderTask(t)));
+
+  // Quick add per column
+  const qa = document.createElement('div');
+  qa.className = 'quick-add';
+  qa.innerHTML = `<input placeholder="+ quick add" />`;
+  const input = qa.querySelector('input');
+  input.addEventListener('keydown', e=>{
+    if(e.key==='Enter' && input.value.trim()){
+      const p = parseQuickAdd(input.value);
+      state.tasks.push({
+        id: uid(), title:p.title || 'Untitled', link:'', due:'',
+        date: dateKey || null, done:false, created: Date.now(),
+        priority:p.priority, order: Date.now(),
+      });
+      save(); render();
+    }
+  });
+  drop.appendChild(qa);
+  wireDrop(drop);
+}
+
+const HINTS = ['no tasks','what\'s on your plate?','add something','clear day','open canvas','nothing scheduled'];
+function emptyHint(){ return HINTS[Math.floor(Math.random()*HINTS.length)]; }
+
+function renderTask(t){
+  const el = document.createElement('div');
+  el.className = 'task' + (t.done?' done':'');
+  el.draggable = true;
+  el.dataset.id = t.id;
+  el.dataset.pri = t.priority || 0;
+
+  const chips = [];
+  if(t.due) chips.push(dueChip(t.due));
+  if(t.backlog) chips.push(`<span class="chip" style="color:var(--muted-2)">📦 backlog</span>`);
+  if(t.notes && t.notes.trim()) chips.push(`<button class="chip notes-chip" data-note-id="${t.id}">📝 notes</button>`);
+
+  const link = t.link ? `<a class="link-chip" href="${escapeAttr(normalizeUrl(t.link))}" target="_blank" rel="noopener">${escapeHtml(prettyUrl(t.link))}</a>` : '';
+  const chipRow = chips.length ? `<div class="chips">${chips.join('')}</div>` : '';
+  const linkRow = link;
+  const meta = (chipRow || linkRow) ? `<div class="meta">${chipRow}${linkRow}</div>` : '';
+
+  el.innerHTML = `
+    <input type="checkbox" class="check" ${t.done?'checked':''} />
+    <div class="task-body">
+      <div class="title" title="${escapeAttr(t.title)}">${escapeHtml(t.title)}</div>
+      ${meta}
+    </div>
+    <div class="row-actions">
+      <button class="icon-btn edit" title="Edit (E)">✎</button>
+      <button class="icon-btn resched" title="Reschedule">
+        📅<input type="date" value="${t.date||''}" />
+      </button>
+      <button class="icon-btn del" title="Delete">×</button>
+    </div>
+  `;
+
+  el.querySelector('.check').addEventListener('change', e=>{
+    completeTask(t, e.target.checked);
+  });
+  el.querySelector('.del').addEventListener('click', ()=> deleteTask(t));
+  el.querySelector('.resched input').addEventListener('change', e=>{
+    if(e.target.value){ t.date = e.target.value; save(); render(); }
+  });
+  el.querySelector('.resched input').addEventListener('mousedown', e=> e.stopPropagation());
+  el.querySelector('.check').addEventListener('mousedown', e=> e.stopPropagation());
+  el.querySelector('.edit').addEventListener('click', ()=> openEdit(t));
+  el.querySelector('.title').addEventListener('dblclick', ()=> openEdit(t));
+  el.querySelector('.notes-chip')?.addEventListener('click', e=>{
+    e.stopPropagation();
+    openNotes(t);
+  });
+  el.querySelector('.notes-chip')?.addEventListener('mousedown', e=> e.stopPropagation());
+
+  // drag
+  el.addEventListener('dragstart', e=>{
+    el.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', t.id);
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  el.addEventListener('dragend', ()=> el.classList.remove('dragging'));
+  el.addEventListener('dragover', e=>{
+    e.preventDefault();
+    const r = el.getBoundingClientRect();
+    const before = e.clientY < r.top + r.height/2;
+    document.querySelectorAll('.task').forEach(x=>x.classList.remove('drop-before','drop-after'));
+    el.classList.add(before ? 'drop-before' : 'drop-after');
+  });
+  el.addEventListener('dragleave', ()=> el.classList.remove('drop-before','drop-after'));
+  el.addEventListener('drop', e=>{
+    e.preventDefault(); e.stopPropagation();
+    const draggedId = e.dataTransfer.getData('text/plain');
+    if(draggedId === t.id) return;
+    const dragged = state.tasks.find(x=>x.id===draggedId);
+    if(!dragged) return;
+    const r = el.getBoundingClientRect();
+    const before = e.clientY < r.top + r.height/2;
+    dragged.date = t.date;
+    // reorder
+    const baseOrder = t.order || t.created;
+    dragged.order = before ? baseOrder - 1 : baseOrder + 1;
+    save(); render();
+  });
+
+  // touch swipe
+  let sx = 0, sy = 0, dx = 0;
+  el.addEventListener('touchstart', e=>{
+    const t0 = e.touches[0]; sx = t0.clientX; sy = t0.clientY; dx = 0;
+  }, {passive:true});
+  el.addEventListener('touchmove', e=>{
+    const t0 = e.touches[0];
+    dx = t0.clientX - sx;
+    if(Math.abs(dx) > Math.abs(t0.clientY - sy)){
+      el.classList.toggle('swipe-complete', dx > 50);
+      el.classList.toggle('swipe-delete',   dx < -50);
+    }
+  }, {passive:true});
+  el.addEventListener('touchend', ()=>{
+    el.classList.remove('swipe-complete','swipe-delete');
+    if(dx > 100) completeTask(t, !t.done);
+    else if(dx < -100) deleteTask(t);
+  });
+
+  return el;
+}
+
+function dueChip(due){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(due+'T00:00:00');
+  const diff = Math.round((d-today)/86400000);
+  const cls = diff < 0 ? 'due overdue' : 'due';
+  const dateLabel = d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  let label = `⏰ ${dateLabel}`;
+  if(diff < 0){
+    const n = Math.abs(diff);
+    label += ` · ${n} ${n===1?'day':'days'} past deadline`;
+  }
+  return `<span class="${cls}">${label}</span>`;
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function escapeAttr(s){ return escapeHtml(s); }
+function normalizeUrl(u){ if(!u) return ''; return /^[a-z]+:\/\//i.test(u) ? u : 'https://' + u; }
+function prettyUrl(u){
+  try{
+    const url = new URL(normalizeUrl(u));
+    let host = url.hostname.replace(/^www\./,'');
+    const path = url.pathname && url.pathname !== '/' ? url.pathname : '';
+    const short = host + path;
+    return short.length > 32 ? short.slice(0,30) + '…' : short;
+  }catch{ return u.length > 32 ? u.slice(0,30)+'…' : u; }
+}
+
+/* ========== Actions ========== */
+function completeTask(t, done){
+  t.done = done;
+  if(done){
+    t.completedAt = Date.now();
+    const k = ymd(new Date());
+    state.completions[k] = (state.completions[k]||0) + 1;
+    saveCompletions();
+    // celebration: if every task on this date is now done
+    if(t.date){
+      const dayTasks = state.tasks.filter(x => x.date === t.date && !isArchived(x));
+      if(dayTasks.length && dayTasks.every(x => x.done)){
+        celebrate(t.date);
+      }
+    }
+  } else {
+    t.completedAt = undefined;
+  }
+  save(); render();
+}
+
+/* ========== Celebration ========== */
+function celebrate(dateKey){
+  const el = document.getElementById('celebrate');
+  const canvas = document.getElementById('confetti');
+  const sub = document.getElementById('celebrateSub');
+  const d = new Date(dateKey+'T00:00:00');
+  const dayName = DAYS[d.getDay()];
+  const isToday = dateKey === ymd(new Date());
+  const messages = [
+    `${isToday ? "Today's" : dayName+"'s"} list — clean slate 🎉`,
+    `Crushed it. Every task done.`,
+    `Inbox zero for ${dayName}.`,
+    `Done. Reward yourself.`,
+    `Streak preserved 🔥`,
+  ];
+  sub.textContent = messages[Math.floor(Math.random()*messages.length)];
+
+  el.classList.add('on');
+  runConfetti(canvas);
+
+  setTimeout(()=>{
+    el.classList.remove('on');
+  }, 2800);
+}
+
+function runConfetti(canvas){
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.width = window.innerWidth * dpr;
+  const H = canvas.height = window.innerHeight * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const w = window.innerWidth, h = window.innerHeight;
+
+  const colors = ['#ff00e5','#00ffa3','#ffea00','#3b82f6','#f87171','#a78bfa','#86efac','#fcd34d'];
+  const N = 180;
+  const parts = [];
+  for(let i=0; i<N; i++){
+    parts.push({
+      x: w/2 + (Math.random()-.5)*200,
+      y: h/2 + (Math.random()-.5)*60,
+      vx: (Math.random()-.5) * 16,
+      vy: (Math.random()*-14) - 4,
+      g: 0.35 + Math.random()*0.15,
+      size: 5 + Math.random()*8,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      rot: Math.random()*Math.PI*2,
+      vr: (Math.random()-.5) * 0.3,
+      shape: Math.random() < .5 ? 'rect' : 'circle',
+      life: 0,
+      maxLife: 90 + Math.random()*60,
+    });
+  }
+
+  let frame = 0;
+  function tick(){
+    ctx.clearRect(0,0,w,h);
+    let alive = 0;
+    for(const p of parts){
+      p.life++;
+      if(p.life > p.maxLife) continue;
+      alive++;
+      p.vy += p.g;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vr;
+      const a = Math.max(0, 1 - p.life / p.maxLife);
+      ctx.globalAlpha = a;
+      ctx.fillStyle = p.color;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      if(p.shape==='rect'){
+        ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
+      } else {
+        ctx.beginPath();
+        ctx.arc(0,0,p.size/2,0,Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+    frame++;
+    if(alive > 0 && frame < 200) requestAnimationFrame(tick);
+    else ctx.clearRect(0,0,w,h);
+  }
+  tick();
+}
+
+function deleteTask(t){
+  state.tasks = state.tasks.filter(x => x.id !== t.id);
+  save(); render();
+  // undo
+  if(state.undo?.timer) clearTimeout(state.undo.timer);
+  const restore = ()=>{
+    state.tasks.push(t); save(); render();
+    closeToast();
+    state.undo = null;
+  };
+  state.undo = { task: t, timer: null };
+  toast(`Deleted "${t.title.slice(0,40)}"`, {label:'Undo', cb: restore}, 5000);
+}
+
+/* ========== Drag/drop into column ========== */
+function wireDrop(drop){
+  // Day columns are recreated on each render, but the backlog drawer's drop
+  // zone is a persistent element — guard against stacking duplicate listeners.
+  if(drop.dataset.wired) return;
+  drop.dataset.wired = '1';
+  drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', ()=> drop.classList.remove('over'));
+  drop.addEventListener('drop', e=>{
+    e.preventDefault();
+    drop.classList.remove('over');
+    document.querySelectorAll('.task').forEach(x=>x.classList.remove('drop-before','drop-after'));
+    if(e.target.closest('.task')) return; // handled by task drop
+    const id = e.dataTransfer.getData('text/plain');
+    const t = state.tasks.find(x=>x.id===id);
+    if(!t) return;
+    t.date = drop.dataset.date || null;
+    save(); render();
+  });
+}
+function wireWeekDrop(btn, deltaDays){
+  btn.addEventListener('dragover', e=>{ e.preventDefault(); btn.classList.add('drop-target'); });
+  btn.addEventListener('dragleave', ()=> btn.classList.remove('drop-target'));
+  btn.addEventListener('drop', e=>{
+    e.preventDefault(); btn.classList.remove('drop-target');
+    const id = e.dataTransfer.getData('text/plain');
+    const t = state.tasks.find(x=>x.id===id);
+    if(!t || !t.date) return;
+    const d = new Date(t.date+'T00:00:00');
+    d.setDate(d.getDate()+deltaDays);
+    t.date = ymd(d);
+    save(); render();
+  });
+}
+
+/* ========== Add form ========== */
+document.getElementById('addForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const titleRaw = document.getElementById('t_title').value.trim();
+  if(!titleRaw) return;
+  const link = document.getElementById('t_link').value.trim();
+  const due = document.getElementById('t_due').value || '';
+  const dayVal = document.getElementById('t_day').value;
+  const formPri = parseInt(document.getElementById('t_pri').value, 10);
+  const p = parseQuickAdd(titleRaw);
+  state.tasks.push({
+    id: uid(),
+    title: p.title || titleRaw,
+    link, due,
+    date: dayVal === '-1' ? null : dayVal,
+    done: false,
+    created: Date.now(),
+    priority: Math.max(formPri, p.priority),
+    order: Date.now(),
+  });
+  save();
+  e.target.reset();
+  document.getElementById('t_pri').value = '0';
+  render();
+  document.getElementById('t_title').focus();
+});
+
+/* ========== Edit modal ========== */
+function openEdit(t){
+  const m = document.getElementById('editModal');
+  m.innerHTML = `
+    <h2>Edit task</h2>
+    <div class="field">
+      <label>Title</label>
+      <input class="e_title" value="${escapeAttr(t.title)}" />
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Date</label>
+        <input class="e_date" type="date" value="${t.date||''}" />
+      </div>
+      <div class="field">
+        <label>Deadline</label>
+        <input class="e_due" type="date" value="${t.due||''}" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Link</label>
+      <input class="e_link" value="${escapeAttr(t.link||'')}" />
+    </div>
+    <div class="field">
+      <label>Priority</label>
+      <div class="pri-picker">
+        <button type="button" data-p="0" class="${(t.priority||0)===0?'active':''}">None</button>
+        <button type="button" data-p="1" class="${t.priority===1?'active':''}">Med</button>
+        <button type="button" data-p="2" class="${t.priority===2?'active':''}">High</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <textarea class="e_notes" rows="5" placeholder="Add notes, context, links, anything…">${escapeHtml(t.notes||'')}</textarea>
+    </div>
+    <div class="field" style="display:flex;flex-direction:row;gap:8px;align-items:center">
+      <input type="checkbox" class="e_backlog" id="e_backlog" ${t.backlog?'checked':''} style="width:auto;margin-top:0" />
+      <label for="e_backlog" style="margin:0;text-transform:none;letter-spacing:0;color:var(--text);font-size:13px;cursor:pointer">Backlog — parked, not actively tracked</label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelEdit">Cancel</button>
+      <button class="btn primary" id="saveEdit">Save</button>
+    </div>
+  `;
+  m.querySelectorAll('.pri-picker button').forEach(b=>{
+    b.onclick = ()=>{
+      m.querySelectorAll('.pri-picker button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+    };
+  });
+
+  showOverlay('editOverlay');
+  m.querySelector('.e_title').focus();
+  m.querySelector('.e_title').select();
+
+  m.querySelector('#cancelEdit').onclick = ()=> closeOverlays();
+  m.querySelector('#saveEdit').onclick = ()=>{
+    const newTitle = m.querySelector('.e_title').value.trim();
+    if(!newTitle){ closeOverlays(); return; }
+    t.title = newTitle;
+    t.date = m.querySelector('.e_date').value || null;
+    t.due  = m.querySelector('.e_due').value || '';
+    t.link = m.querySelector('.e_link').value.trim();
+    t.priority = parseInt(m.querySelector('.pri-picker .active').dataset.p, 10);
+    t.notes = m.querySelector('.e_notes').value;
+    t.backlog = m.querySelector('.e_backlog').checked;
+    save(); closeOverlays(); render();
+  };
+}
+
+/* ========== Notes viewer ========== */
+function openNotes(t){
+  const m = document.getElementById('notesModal');
+  // linkify URLs in notes
+  const escaped = escapeHtml(t.notes || '');
+  const linked = escaped.replace(
+    /(https?:\/\/[^\s<]+)/g,
+    '<a href="$1" target="_blank" rel="noopener">$1</a>'
+  );
+  m.innerHTML = `
+    <h2>${escapeHtml(t.title)}</h2>
+    <div class="notes-view">${linked || '<span style="color:var(--muted)">(no notes)</span>'}</div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="closeN">Close</button>
+      <button class="btn primary" id="editN">Edit</button>
+    </div>
+  `;
+  showOverlay('notesOverlay');
+  m.querySelector('#closeN').onclick = closeOverlays;
+  m.querySelector('#editN').onclick = ()=>{ closeOverlays(); openEdit(t); };
+}
+
+/* ========== Settings ========== */
+function openSettings(){
+  const s = state.settings;
+  const m = document.getElementById('settingsModal');
+  m.innerHTML = `
+    <h2>Settings</h2>
+    <div class="field"><label>Theme</label>
+      <select id="s_theme">
+        <option value="dark"  ${s.theme==='dark'?'selected':''}>Dark — Navy + Blue</option>
+        <option value="light" ${s.theme==='light'?'selected':''}>Light — Cool Gray + Blue</option>
+        <option value="neon"  ${s.theme==='neon'?'selected':''}>Neon — Electric Blue</option>
+      </select>
+    </div>
+    <div class="field"><label>Weekends</label>
+      <select id="s_weekend">
+        <option value="0" ${!s.showWeekend?'selected':''}>Hide — Monday to Friday</option>
+        <option value="1" ${s.showWeekend?'selected':''}>Show — full 7-day week</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Archive completed after (days)</label>
+        <input type="number" min="0" id="s_archive" value="${s.archiveAfterDays}" />
+      </div>
+      <div class="field"><label>Show archived</label>
+        <select id="s_showarch">
+          <option value="0" ${!s.showArchived?'selected':''}>Hide</option>
+          <option value="1" ${s.showArchived?'selected':''}>Show</option>
+        </select>
+      </div>
+    </div>
+    <h3>Danger zone</h3>
+    <div style="display:flex; gap:8px">
+      <button class="btn danger" id="clearDone">Delete all completed</button>
+      <button class="btn danger" id="clearAll">Delete everything</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelSet">Cancel</button>
+      <button class="btn primary" id="saveSet">Save</button>
+    </div>
+  `;
+  showOverlay('settingsOverlay');
+  m.querySelector('#cancelSet').onclick = closeOverlays;
+  m.querySelector('#saveSet').onclick = ()=>{
+    const days = parseInt(m.querySelector('#s_archive').value, 10);
+    state.settings = {
+      theme: m.querySelector('#s_theme').value,
+      archiveAfterDays: Number.isFinite(days) && days >= 0 ? days : 30,
+      showArchived: m.querySelector('#s_showarch').value==='1',
+      showWeekend: m.querySelector('#s_weekend').value==='1',
+    };
+    sanitizeSettings();
+    saveSettings();
+    closeOverlays(); render();
+  };
+  m.querySelector('#clearDone').onclick = ()=>{
+    if(confirm('Delete all completed tasks?')){
+      state.tasks = state.tasks.filter(t=>!t.done); save(); render(); closeOverlays();
+    }
+  };
+  m.querySelector('#clearAll').onclick = ()=>{
+    if(confirm('Delete EVERYTHING? This cannot be undone.')){
+      state.tasks = []; save(); render(); closeOverlays();
+    }
+  };
+}
+
+/* ========== Search ========== */
+function openSearch(){
+  const m = document.getElementById('searchModal');
+  m.innerHTML = `
+    <h2>Search</h2>
+    <input class="search-input" id="searchQ" placeholder="Type to search title, link, notes…" />
+    <div class="search-results" id="searchR"></div>
+  `;
+  showOverlay('searchOverlay');
+  const q = m.querySelector('#searchQ'); q.focus();
+  const r = m.querySelector('#searchR');
+  function update(){
+    const term = q.value.trim().toLowerCase();
+    if(!term){ r.innerHTML = ''; return; }
+    const tokens = term.split(/\s+/);
+    const matches = state.tasks.filter(t=>{
+      const hay = [t.title, t.link, t.notes].join(' ').toLowerCase();
+      return tokens.every(k => hay.includes(k));
+    }).slice(0, 50);
+    r.innerHTML = matches.length ? '' : '<div class="hint">No matches.</div>';
+    matches.forEach(t=>{
+      const item = document.createElement('div');
+      item.className = 'search-item';
+      item.innerHTML = `
+        <span style="flex:1"><span style="color:${t.done?'var(--muted)':'var(--text)'}; text-decoration:${t.done?'line-through':'none'}">${escapeHtml(t.title)}</span></span>
+        <span class="when">${t.date || 'backlog'}</span>
+      `;
+      item.onclick = ()=>{ closeOverlays(); openEdit(t); };
+      r.appendChild(item);
+    });
+  }
+  q.addEventListener('input', update);
+}
+
+/* ========== Export menu ========== */
+function openExport(){
+  const m = document.getElementById('exportModal');
+  const todayKey = ymd(new Date());
+  m.innerHTML = `
+    <h2>Export</h2>
+    <div class="field">
+      <label>Range</label>
+      <div style="display:flex; gap:6px; flex-wrap:wrap">
+        <button type="button" class="btn range-preset" data-r="all">All time</button>
+        <button type="button" class="btn range-preset" data-r="week">This week</button>
+        <button type="button" class="btn range-preset" data-r="month">This month</button>
+        <button type="button" class="btn range-preset" data-r="custom">Custom</button>
+      </div>
+    </div>
+    <div class="field-row" id="customRange" style="display:none">
+      <div class="field"><label>From</label><input type="date" id="exFrom" value="" /></div>
+      <div class="field"><label>To</label><input type="date" id="exTo" value="${todayKey}" /></div>
+    </div>
+    <div class="field" style="display:flex; flex-direction:row; gap:8px; align-items:center">
+      <input type="checkbox" id="incBacklog" checked style="width:auto" />
+      <label for="incBacklog" style="margin:0; text-transform:none; letter-spacing:0; color:var(--text); font-size:13px; cursor:pointer">Include backlog (unscheduled tasks)</label>
+    </div>
+    <div class="field" style="display:flex; flex-direction:row; gap:8px; align-items:center">
+      <input type="checkbox" id="incDone" checked style="width:auto" />
+      <label for="incDone" style="margin:0; text-transform:none; letter-spacing:0; color:var(--text); font-size:13px; cursor:pointer">Include completed tasks</label>
+    </div>
+    <div id="exCount" style="margin:12px 0 4px; color:var(--muted); font-size:12px"></div>
+    <div style="display:flex; flex-direction:column; gap:8px">
+      <button class="btn" id="exJson">Export JSON</button>
+      <button class="btn" id="exCsv">Export CSV</button>
+    </div>
+    <h3 style="margin:18px 0 8px; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em">Import</h3>
+    <div class="field">
+      <label>Import mode</label>
+      <select id="imMode">
+        <option value="merge">Merge — keep existing, add new (skip duplicate IDs)</option>
+        <option value="replace">Replace — wipe current tasks and load file</option>
+      </select>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:8px">
+      <button class="btn" id="imBtn">Choose JSON file…</button>
+      <input type="file" id="imFile" accept="application/json,.json" hidden />
+    </div>
+    <div class="modal-actions"><button class="btn ghost" id="closeE">Close</button></div>
+  `;
+  showOverlay('exportOverlay');
+
+  let range = 'all'; // all | week | month | custom
+  const presets = m.querySelectorAll('.range-preset');
+  const customRow = m.querySelector('#customRange');
+  const fromEl = m.querySelector('#exFrom');
+  const toEl   = m.querySelector('#exTo');
+  const incBacklog = m.querySelector('#incBacklog');
+  const incDone    = m.querySelector('#incDone');
+  const countEl    = m.querySelector('#exCount');
+
+  function setActive(){
+    presets.forEach(b => b.classList.toggle('primary', b.dataset.r === range));
+    customRow.style.display = range === 'custom' ? 'grid' : 'none';
+  }
+  function rangeBounds(){
+    if(range === 'all') return [null, null];
+    if(range === 'custom') return [fromEl.value || null, toEl.value || null];
+    const today = new Date(); today.setHours(0,0,0,0);
+    if(range === 'week'){
+      const start = startOfWeek(today);
+      const end = addDays(start, 6);
+      return [ymd(start), ymd(end)];
+    }
+    if(range === 'month'){
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      const end = new Date(today.getFullYear(), today.getMonth()+1, 0);
+      return [ymd(start), ymd(end)];
+    }
+    return [null, null];
+  }
+  function filtered(){
+    const [from, to] = rangeBounds();
+    return state.tasks.filter(t => {
+      if(!incDone.checked && t.done) return false;
+      if(!t.date){
+        // backlog (no date)
+        return incBacklog.checked;
+      }
+      if(from && t.date < from) return false;
+      if(to && t.date > to) return false;
+      return true;
+    });
+  }
+  function updateCount(){
+    const n = filtered().length;
+    const [from, to] = rangeBounds();
+    const rangeText = range === 'all' ? 'all time'
+      : range === 'custom' ? `${from||'…'} to ${to||'…'}`
+      : range === 'week' ? 'this week' : 'this month';
+    countEl.textContent = `${n} task${n===1?'':'s'} match (${rangeText})`;
+  }
+
+  presets.forEach(b => b.onclick = ()=>{ range = b.dataset.r; setActive(); updateCount(); });
+  [fromEl, toEl, incBacklog, incDone].forEach(el => el.addEventListener('input', updateCount));
+  setActive(); updateCount();
+
+  function suffix(){
+    const [from, to] = rangeBounds();
+    if(range === 'all') return 'all';
+    if(range === 'week') return `week-${ymd(startOfWeek(new Date()))}`;
+    if(range === 'month'){ const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; }
+    return `${from||'start'}_to_${to||'end'}`;
+  }
+
+  m.querySelector('#closeE').onclick = closeOverlays;
+  m.querySelector('#exJson').onclick = ()=>{
+    const data = filtered();
+    if(!data.length){ toast('No tasks match the filter.'); return; }
+    downloadFile(`tasks-${suffix()}.json`, JSON.stringify(data, null, 2), 'application/json');
+  };
+  m.querySelector('#exCsv').onclick = ()=>{
+    const data = filtered();
+    if(!data.length){ toast('No tasks match the filter.'); return; }
+    downloadFile(`tasks-${suffix()}.csv`, toCsv(data), 'text/csv');
+  };
+
+  // Import
+  const imFile = m.querySelector('#imFile');
+  m.querySelector('#imBtn').onclick = ()=> imFile.click();
+  imFile.onchange = e => {
+    const f = e.target.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      let data;
+      try { data = JSON.parse(reader.result); }
+      catch { toast('Invalid JSON file.'); return; }
+      if(!Array.isArray(data)){ toast('Expected an array of tasks.'); return; }
+
+      // Sanity: each item must look like a task
+      const valid = data.filter(t => t && typeof t === 'object' && t.id && typeof t.title === 'string');
+      if(!valid.length){ toast('No valid task records found.'); return; }
+
+      const mode = m.querySelector('#imMode').value;
+      const before = state.tasks.length;
+
+      // Auto-backup current state before any destructive import (keep last 3)
+      try {
+        localStorage.setItem(`${BACKUP_PREFIX}${Date.now()}`, JSON.stringify(state.tasks));
+        Object.keys(localStorage)
+          .filter(k => k.startsWith(BACKUP_PREFIX))
+          .sort()
+          .slice(0, -3)
+          .forEach(k => localStorage.removeItem(k));
+      } catch {}
+
+      if(mode === 'replace'){
+        if(state.tasks.length && !confirm(`Replace all ${state.tasks.length} existing tasks with ${valid.length} from the file?`)){
+          imFile.value = '';
+          return;
+        }
+        state.tasks = valid.map(normalizeImported);
+      } else {
+        // merge — skip IDs we already have
+        const have = new Set(state.tasks.map(x => x.id));
+        const incoming = valid.filter(t => !have.has(t.id)).map(normalizeImported);
+        state.tasks = state.tasks.concat(incoming);
+      }
+      save();
+      imFile.value = '';
+      closeOverlays();
+      render();
+      const added = state.tasks.length - before;
+      if(mode === 'replace') toast(`Replaced with ${state.tasks.length} task${state.tasks.length===1?'':'s'}.`);
+      else toast(`Imported ${added} new task${added===1?'':'s'} (${valid.length - added} duplicate${(valid.length-added)===1?'':'s'} skipped).`);
+    };
+    reader.onerror = ()=> toast('Failed to read file.');
+    reader.readAsText(f);
+  };
+}
+
+function normalizeImported(t){
+  return {
+    id: t.id,
+    title: String(t.title || 'Untitled'),
+    link: t.link || '',
+    due: t.due || '',
+    date: t.date || null,
+    done: !!t.done,
+    created: t.created || Date.now(),
+    priority: t.priority || 0,
+    order: t.order ?? t.created ?? Date.now(),
+    notes: t.notes || '',
+    completedAt: t.completedAt,
+    backlog: !!t.backlog,
+  };
+}
+
+function downloadFile(name, content, mime){
+  const blob = new Blob([content], {type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+}
+function toCsv(tasks){
+  const cols = ['id','title','date','due','done','priority','link'];
+  const esc = s => `"${String(s ?? '').replace(/"/g,'""')}"`;
+  return [cols.join(','), ...tasks.map(t => cols.map(c => esc(t[c])).join(','))].join('\n');
+}
+
+/* ========== Stats ========== */
+function renderStats(){
+  const todayKey = ymd(new Date());
+  const dates = weekDates();
+  const start = ymd(dates[0]), end = ymd(dates[dates.length-1]);
+  const inThisWeek = t => t.date && t.date >= start && t.date <= end;
+
+  const doneWeek = state.tasks.filter(t => t.done && inThisWeek(t)).length;
+  const pendWeek = state.tasks.filter(t => !t.done && inThisWeek(t)).length;
+  const pendAll  = state.tasks.filter(t => !t.done && !t.backlog).length;
+  const overdue  = state.tasks.filter(t => !t.done && t.due && t.due < todayKey).length;
+  const total    = state.tasks.length;
+  const completion = (doneWeek+pendWeek) ? Math.round(100*doneWeek/(doneWeek+pendWeek)) : 0;
+
+  set('s_streak', currentStreak());
+  set('s_doneWeek', doneWeek);
+  set('s_pendWeek', pendWeek);
+  set('s_pendAll', pendAll);
+  set('s_overdue', overdue);
+  set('s_total', total);
+  set('s_completion', completion + '%');
+  document.querySelector('.overdue-pill').classList.toggle('zero', overdue===0);
+}
+function set(id, v){ const el = document.getElementById(id); if(el) el.textContent = String(v); }
+
+function currentStreak(){
+  let n = 0;
+  let d = new Date(); d.setHours(0,0,0,0);
+  // Grace period: no completions yet today shouldn't zero the streak —
+  // count from yesterday backwards until today's first completion lands.
+  if(!state.completions[ymd(d)]) d = addDays(d, -1);
+  while(state.completions[ymd(d)]){ n++; d = addDays(d, -1); }
+  return n;
+}
+
+/* ========== Toast ========== */
+function toast(message, action=null, ttl=3500){
+  closeToast();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<span>${escapeHtml(message)}</span>${action ? `<button>${escapeHtml(action.label)}</button>` : ''}`;
+  if(action) t.querySelector('button').onclick = ()=>{ action.cb(); closeToast(); };
+  document.getElementById('toastHost').appendChild(t);
+  toast.timer = setTimeout(closeToast, ttl);
+}
+function closeToast(){
+  if(toast.timer) clearTimeout(toast.timer);
+  document.getElementById('toastHost').innerHTML = '';
+}
+
+/* ========== Overlay helpers ========== */
+function showOverlay(id){
+  closeOverlays();
+  document.getElementById(id).classList.add('open');
+}
+function closeOverlays(){
+  document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open'));
+}
+document.querySelectorAll('.overlay').forEach(o=>{
+  o.addEventListener('click', e=>{ if(e.target===o) closeOverlays(); });
+});
+
+/* ========== Header buttons ========== */
+document.getElementById('prevWeek').onclick = ()=>{ state.weekOffset--; render(); };
+document.getElementById('nextWeek').onclick = ()=>{ state.weekOffset++; render(); };
+document.getElementById('todayBtn').onclick = ()=>{ state.weekOffset=0; render(); };
+document.getElementById('searchBtn').onclick = openSearch;
+document.getElementById('rollBtn').onclick = ()=>{
+  const yKey = ymd(addDays(new Date(),-1));
+  const yIncomp = state.tasks.filter(t => t.date===yKey && !t.done);
+  if(!yIncomp.length){ toast('Nothing to roll over from yesterday.'); return; }
+  const today = ymd(new Date());
+  yIncomp.forEach(t => t.date = today);
+  save(); render();
+  toast(`Rolled over ${yIncomp.length} task${yIncomp.length>1?'s':''}.`);
+};
+document.getElementById('settingsBtn').onclick = openSettings;
+document.getElementById('backlogBtn').onclick = ()=> document.getElementById('backlogDrawer').classList.toggle('open');
+document.getElementById('closeBacklog').onclick = ()=> document.getElementById('backlogDrawer').classList.remove('open');
+document.getElementById('exportBtn').onclick = openExport;
+// week-shift drop targets are persistent header buttons — wire exactly once
+wireWeekDrop(document.getElementById('prevWeek'), -7);
+wireWeekDrop(document.getElementById('nextWeek'), +7);
+
+/* ========== Keyboard ========== */
+window.addEventListener('keydown', e=>{
+  const inField = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
+  if(e.key==='Escape'){ closeOverlays(); document.getElementById('backlogDrawer').classList.remove('open'); return; }
+  if(inField) return;
+  if(e.key==='n' || e.key==='N'){ e.preventDefault(); document.getElementById('t_title').focus(); }
+  else if(e.key==='/' || (e.metaKey && e.key==='k') || (e.ctrlKey && e.key==='k')){ e.preventDefault(); openSearch(); }
+  else if(e.key==='t' || e.key==='T'){ state.weekOffset = 0; render(); }
+  else if(e.key==='ArrowLeft'){ state.weekOffset--; render(); }
+  else if(e.key==='ArrowRight'){ state.weekOffset++; render(); }
+});
+
+/* ========== Bootstrap & cross-tab sync ========== */
+function hydrate(s){
+  if(Array.isArray(s.tasks)) state.tasks = s.tasks;
+  if(s.settings && typeof s.settings === 'object' && !Array.isArray(s.settings)){
+    state.settings = { ...defaultSettings, ...s.settings };
+    sanitizeSettings();
+  }
+  if(s.completions && typeof s.completions === 'object'){
+    state.completions = s.completions;
+  }
+  if(s.revs && typeof s.revs === 'object') storage.revs = { ...storage.revs, ...s.revs };
+  // Mirror back to localStorage as offline backup
+  saveKey(STORAGE_KEY, state.tasks);
+  saveKey(SETTINGS_KEY, state.settings);
+  saveKey(COMPLETIONS_KEY, state.completions);
+}
+
+async function bootstrap(){
+  // Try same-origin first; if served via file://, fall back to localhost:7788.
+  const candidates = [
+    '',                            // same-origin (http://localhost:7788)
+    'http://localhost:7788',       // local Bun server when running from file://
+  ];
+  for(const base of candidates){
+    try{
+      const ctrl = new AbortController();
+      const timer = setTimeout(()=>ctrl.abort(), 800);
+      const r = await fetch(`${base}/api/health`, { signal: ctrl.signal });
+      clearTimeout(timer);
+      if(!r.ok) continue;
+      storage.mode = 'server';
+      storage.base = base;
+      const sr = await fetch(`${base}/api/state`);
+      hydrate(await sr.json());
+      break;
+    }catch{ /* try next candidate */ }
+  }
+  checkQuota();
+  render();
+  setStorageBadge();
+}
+
+// Local mode: another tab wrote to localStorage — pick it up.
+// (In server mode the server is the source of truth; the 409 conflict
+// handler and the visibility re-sync below cover cross-tab consistency.)
+window.addEventListener('storage', e=>{
+  if(storage.mode !== 'local') return;
+  if(e.key === STORAGE_KEY) state.tasks = load(STORAGE_KEY, state.tasks);
+  else if(e.key === SETTINGS_KEY){ state.settings = { ...defaultSettings, ...load(SETTINGS_KEY, {}) }; sanitizeSettings(); }
+  else if(e.key === COMPLETIONS_KEY) state.completions = load(COMPLETIONS_KEY, state.completions);
+  else return;
+  render();
+});
+
+// Server mode: returning to this tab — refresh if another tab wrote meanwhile.
+document.addEventListener('visibilitychange', async ()=>{
+  if(document.visibilityState !== 'visible') return;
+  if(storage.mode !== 'server' || storage.pending.size) return;
+  try{
+    const r = await fetch(`${storage.base}/api/state`);
+    const s = await r.json();
+    const revs = s.revs || {};
+    const stale = ['tasks','settings','completions']
+      .some(k => typeof revs[k] === 'number' && revs[k] !== storage.revs[k]);
+    if(stale){ hydrate(s); render(); }
+  }catch{}
+});
+
+// Flush debounced writes if the tab closes inside the 300ms window.
+window.addEventListener('pagehide', ()=>{
+  if(storage.mode !== 'server') return;
+  for(const name of storage.pending){
+    clearTimeout(storage.timers[name]);
+    const value = name === 'tasks' ? state.tasks
+      : name === 'settings' ? state.settings : state.completions;
+    const blob = new Blob([JSON.stringify(value)], {type:'application/json'});
+    navigator.sendBeacon(`${storage.base}/api/${name}?baseRev=${storage.revs[name] ?? 0}`, blob);
+  }
+  storage.pending.clear();
+});
+
+bootstrap();
+</script>
+</body>
+</html>
